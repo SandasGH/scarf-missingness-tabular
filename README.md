@@ -1,6 +1,6 @@
 # Robustness of Tabular Classifiers Under Controlled Missingness Using Self-Supervised Pretraining
 
-MSc Computer Science Thesis — King's College London, 2025–26
+MSc Computer Science Thesis - King's College London, 2025–26
 Student: Sanda Puce | K25085750
 Supervisor: Kathleen Steinhofel
 
@@ -20,8 +20,8 @@ classical imputation under realistic missingness conditions.
 
 ## Datasets
 
-- **UCI Credit Card Default** — binary classification, numerical features
-- **Telco Customer Churn** — binary classification, mixed numerical/categorical features
+- **UCI Credit Card Default** - binary classification, numerical features
+- **Telco Customer Churn** - binary classification, mixed numerical/categorical features
 
 Both datasets are publicly available. See `data/download_data.py` for instructions.
 
@@ -42,7 +42,7 @@ Both datasets are publicly available. See `data/download_data.py` for instructio
 
 ## Evaluation Metrics
 
-- AUC (primary — handles class imbalance)
+- AUC (primary - handles class imbalance)
 - Accuracy
 - Performance drop relative to clean baseline
 
