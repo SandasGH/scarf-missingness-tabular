@@ -6,6 +6,10 @@ def median_imputation(X_train, X_test):
     """
     Impute missing values using per-feature medians computed from X_train.
 
+    Medians are fitted on training data only and applied to test data using
+    those same training statistics, preventing leakage of test set information
+    into the preprocessing pipeline.
+
     Parameters
     ----------
     X_train : np.ndarray, shape (n_samples, n_features)
@@ -47,6 +51,11 @@ def knn_imputation(X_train, X_test, k=5):
     """
     Impute missing values using k-nearest neighbours, fit on X_train only.
 
+    The KNNImputer is fitted on training data and applied to test data using
+    the training neighbourhood structure, preventing leakage of test set
+    information into the preprocessing pipeline.  k=5 is the sklearn default
+    and is used without tuning to keep this a standard baseline.
+
     Parameters
     ----------
     X_train : np.ndarray, shape (n_samples, n_features)
@@ -80,6 +89,11 @@ def complete_case(X, y):
     """
     Drop any row from X (and the corresponding y label) where at least one
     feature value is NaN.
+
+    Beyond the data loss from row removal, complete-case analysis assumes MCAR:
+    if that assumption fails, removed rows may be systematically different from
+    retained rows (e.g. customers who do not report income are not a random subset),
+    introducing bias into downstream model estimates.
 
     Parameters
     ----------

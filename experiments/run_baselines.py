@@ -375,6 +375,9 @@ def run_adult_label_scarcity(rows):
     name = "adult"
     LABEL_FRACS = [0.005, 0.01]
     STRATEGIES = ["scarf", "median", "knn"]
+    # MCAR 20% was chosen as the missingness condition for label scarcity experiments
+    # as a representative moderate missingness rate, avoiding the extreme data loss
+    # of 30% MCAR while still presenting a non-trivial imputation challenge.
     MCAR_RATE = 0.20
 
     print(f"\n{'='*60}")
@@ -386,17 +389,21 @@ def run_adult_label_scarcity(rows):
     print(f"\nInjecting MCAR missingness at {int(MCAR_RATE * 100)}% into X_train...")
     X_train_miss = inject_missingness(X_train, mechanism="MCAR", rate=MCAR_RATE)
 
-    # train_medians from full X_train_miss used as SCARF evaluation fallback
     train_medians = np.nanmedian(X_train_miss, axis=0)
 
-    # Imputation fitted on full X_train_miss; labelled subset only used for MLP training
+    # Imputation is fitted once on the full training set before the label fraction loop.
+    # Only the MLP classifier is trained on the labelled subset; the imputation statistics
+    # already reflect the full unlabelled pool, matching how SCARF uses all available rows.
     print("\nPre-computing median imputation on full X_train_miss...")
     X_train_median_imp, X_test_median_imp = median_imputation(X_train_miss, X_test)
 
     print("\nPre-computing KNN imputation on full X_train_miss...")
     X_train_knn_imp, X_test_knn_imp = knn_imputation(X_train_miss, X_test, k=5)
 
-    # SCARF pretrained on full X_train_miss (all rows, no labels required)
+    # SCARF is pretrained once on the full incomplete training set before the label
+    # fraction loop.  This reflects the semi-supervised setting where unlabelled data
+    # is abundant and labels are the scarce resource; the encoder learns representations
+    # from all rows, and only the classification head is trained on the labelled subset.
     print("\nPretraining SCARF encoder on full X_train_miss...")
     encoder = pretrain_scarf(X_train_miss)
 
@@ -446,6 +453,9 @@ def run_label_scarcity(rows):
 
     LABEL_FRACS = [0.005, 0.01]
     STRATEGIES = ["scarf", "median", "knn"]
+    # MCAR 20% was chosen as the missingness condition for label scarcity experiments
+    # as a representative moderate missingness rate, avoiding the extreme data loss
+    # of 30% MCAR while still presenting a non-trivial imputation challenge.
     MCAR_RATE = 0.20
 
     for name in DATASETS:
@@ -458,17 +468,21 @@ def run_label_scarcity(rows):
         print(f"\nInjecting MCAR missingness at {int(MCAR_RATE * 100)}% into X_train...")
         X_train_miss = inject_missingness(X_train, mechanism="MCAR", rate=MCAR_RATE)
 
-        # train_medians from full X_train_miss used as SCARF evaluation fallback
         train_medians = np.nanmedian(X_train_miss, axis=0)
 
-        # Imputation fitted on full X_train_miss; labelled subset only used for MLP training
+        # Imputation is fitted once on the full training set before the label fraction loop.
+        # Only the MLP classifier is trained on the labelled subset; the imputation statistics
+        # already reflect the full unlabelled pool, matching how SCARF uses all available rows.
         print("\nPre-computing median imputation on full X_train_miss...")
         X_train_median_imp, X_test_median_imp = median_imputation(X_train_miss, X_test)
 
         print("\nPre-computing KNN imputation on full X_train_miss...")
         X_train_knn_imp, X_test_knn_imp = knn_imputation(X_train_miss, X_test, k=5)
 
-        # SCARF pretrained on full X_train_miss (all rows, no labels required)
+        # SCARF is pretrained once on the full incomplete training set before the label
+        # fraction loop.  This reflects the semi-supervised setting where unlabelled data
+        # is abundant and labels are the scarce resource; the encoder learns representations
+        # from all rows, and only the classification head is trained on the labelled subset.
         print("\nPretraining SCARF encoder on full X_train_miss...")
         encoder = pretrain_scarf(X_train_miss)
 

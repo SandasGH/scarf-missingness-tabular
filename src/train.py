@@ -20,6 +20,8 @@ def train_mlp(
     patience: int = 15,
     max_epochs: int = 300,
 ) -> MLPClassifier:
+    # Below _MIN_ROWS_FOR_VAL_SPLIT rows, a 10% validation split would leave fewer than
+    # 5 samples for monitoring, making early stopping unreliable; training runs to max_epochs instead.
     use_val_split = len(X_train) >= _MIN_ROWS_FOR_VAL_SPLIT
 
     def to_tensors(X, y):
@@ -88,6 +90,8 @@ def train_mlp(
             if epoch % 10 == 0:
                 print(f"  Epoch {epoch:4d} | train loss: {train_loss:.4f}")
 
+    # Restore weights from the best validation epoch rather than the final epoch,
+    # so the returned model reflects the point of lowest generalisation loss.
     model.load_state_dict(best_weights)
     return model
 

@@ -4,14 +4,22 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-# Feature groups for feature-dependent missingness injection
+# Feature groups for feature-dependent missingness injection.
+# Each group represents columns that would plausibly originate from the same source system,
+# so a single pipeline failure would cause all columns in the group to go missing together.
 UCI_CORRELATED_GROUPS = [
+    # Payment status history (PAY_0 through PAY_6): would come from a payments processing system.
     ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"],
+    # Monthly billing statement amounts: would come from a billing database.
     ["BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6"],
+    # Actual payment amounts made by the customer: separate from billing records and
+    # would originate from a different payments ledger system.
     ["PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"],
 ]
 
-# Note: these column names refer to the encoded (0/1) versions produced below
+# Note: these column names refer to the encoded (0/1) versions produced below.
+# These add-on services would plausibly be stored in the same database table, so a single
+# pipeline failure would cause all of them to go missing simultaneously.
 TELCO_CORRELATED_GROUPS = [
     [
         "StreamingTV",
@@ -23,7 +31,9 @@ TELCO_CORRELATED_GROUPS = [
     ]
 ]
 
-# Populated on first call to _load_adult; contains one group of column indices
+# Workclass and occupation columns are grouped together because both relate to employment
+# status and would plausibly originate from the same HR or employment database table.
+# Populated on first call to _load_adult; contains one group of integer column indices
 # covering all workclass_* and occupation_* OHE columns combined.
 ADULT_CORRELATED_GROUPS = []
 
@@ -107,12 +117,17 @@ def _load_telco():
 def _load_adult():
     df = pd.read_csv(_ADULT_PATH)
 
-    # Step 1: drop non-personal / redundant columns
+    # fnlwgt is a census sampling weight rather than a personal characteristic,
+    # so it carries no predictive signal for income and is dropped.
+    # education is dropped as it is redundant with educational-num, which encodes
+    # the same ordinal information numerically and avoids introducing extra OHE columns.
     df = df.drop(columns=["fnlwgt", "education"])
 
-    # Step 2: structural missingness — raw data encodes missing as "?"
-    # Replace with NaN, then impute with mode computed from training rows only.
-    # This is data cleaning, separate from the experimental missingness injected later.
+    # '?' in workclass and occupation encodes structural missingness in the raw Census data
+    # (respondents who did not report employment details).  These are imputed with the
+    # training-set mode as a data cleaning step before experimental missingness is introduced;
+    # this is separate from the experimental conditions and does not affect the missingness
+    # mechanism being studied.
     for col in ["workclass", "occupation"]:
         df[col] = df[col].replace("?", np.nan)
 
@@ -132,7 +147,10 @@ def _load_adult():
     # Step 4: binary-encode gender
     df["gender"] = df["gender"].map({"Male": 1, "Female": 0}).astype(np.float64)
 
-    # Step 5: one-hot encode remaining categoricals (keep all categories)
+    # Step 5: one-hot encode remaining categoricals (keep all categories).
+    # native-country retains '?' as a distinct OHE category rather than being imputed,
+    # because unknown country of origin may carry genuine predictive signal that should
+    # not be collapsed into a mode value.
     ohe_cols = [
         "workclass", "marital-status", "occupation",
         "relationship", "race", "native-country",
@@ -198,6 +216,10 @@ def inject_missingness(X, mechanism, rate, feature_groups=None):
     total_values = n_rows * n_cols
 
     if mechanism == "MCAR":
+        # Cell-level MCAR: each value is independently set to NaN with probability `rate`.
+        # Note that the row-level survival probability is (1 - rate)^n_cols; at 30% MCAR
+        # across 23 features, only (0.7)^23 ~= 0.1% of rows survive intact, so complete-
+        # case analysis becomes severely restricted even at moderate missingness rates.
         mask = np.random.rand(n_rows, n_cols) < rate
         X_miss[mask] = np.nan
         n_missing = int(mask.sum())
@@ -208,6 +230,10 @@ def inject_missingness(X, mechanism, rate, feature_groups=None):
         n_affected = max(1, int(np.round(rate * n_rows)))
         affected_rows = np.random.choice(n_rows, size=n_affected, replace=False)
         n_missing_before = int(np.isnan(X_miss).sum())
+        # Each affected row independently draws a random correlated group, simulating
+        # independent pipeline failures affecting different database tables for different
+        # customers.  This approximates MAR: the probability of missingness depends on
+        # which system a customer's data is routed through, not on the missing values themselves.
         for row_idx in affected_rows:
             group = feature_groups[np.random.randint(len(feature_groups))]
             for col_idx in group:
