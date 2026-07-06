@@ -18,7 +18,7 @@ from src.baselines import complete_case, median_imputation, knn_imputation
 from src.scarf import pretrain_scarf, finetune_scarf, evaluate_scarf
 
 RESULTS_DIR = os.path.join(_ROOT, "results")
-OUTPUT_CSV = os.path.join(RESULTS_DIR, "clean_baseline.csv")
+OUTPUT_CSV = os.path.join(RESULTS_DIR, "results.csv")
 
 DATASETS = ["uci", "telco"]
 MCAR_RATES = [0.10, 0.20, 0.30]
@@ -215,7 +215,7 @@ def run_feature_dependent(rows):
     dataset_groups = {"uci": uci_groups, "telco": telco_groups}
 
     STRATEGIES = ["complete_case", "median", "knn", "scarf"]
-    FEAT_DEP_RATES = [0.10, 0.20]
+    FEAT_DEP_RATES = [0.10, 0.20, 0.30]
 
     for name in DATASETS:
         feature_groups = dataset_groups[name]
@@ -373,7 +373,7 @@ def run_adult_label_scarcity(rows):
                 existing_conditions.add((row["dataset"], row["condition"]))
 
     name = "adult"
-    LABEL_FRACS = [0.005, 0.01]
+    LABEL_FRACS = [0.005, 0.01, 0.05, 0.10, 0.20]
     STRATEGIES = ["scarf", "median", "knn"]
     # MCAR 20% was chosen as the missingness condition for label scarcity experiments
     # as a representative moderate missingness rate, avoiding the extreme data loss
@@ -408,7 +408,7 @@ def run_adult_label_scarcity(rows):
     encoder = pretrain_scarf(X_train_miss)
 
     for label_frac in LABEL_FRACS:
-        frac_pct = round(label_frac * 100, 1)
+        frac_str = f"{label_frac * 100:g}"
 
         labelled_idx, _ = train_test_split(
             np.arange(len(y_train)), train_size=label_frac,
@@ -417,7 +417,7 @@ def run_adult_label_scarcity(rows):
         y_labelled = y_train[labelled_idx]
 
         for strategy in STRATEGIES:
-            condition = f"{strategy}_label_{frac_pct}"
+            condition = f"{strategy}_label_{frac_str}"
 
             if (name, condition) in existing_conditions:
                 print(f"\nSkipping {name} / {condition} (already in CSV)")
@@ -451,7 +451,7 @@ def run_label_scarcity(rows):
             for row in reader:
                 existing_conditions.add((row["dataset"], row["condition"]))
 
-    LABEL_FRACS = [0.005, 0.01]
+    LABEL_FRACS = [0.005, 0.01, 0.05, 0.10, 0.20]
     STRATEGIES = ["scarf", "median", "knn"]
     # MCAR 20% was chosen as the missingness condition for label scarcity experiments
     # as a representative moderate missingness rate, avoiding the extreme data loss
@@ -487,7 +487,7 @@ def run_label_scarcity(rows):
         encoder = pretrain_scarf(X_train_miss)
 
         for label_frac in LABEL_FRACS:
-            frac_pct = round(label_frac * 100, 1)
+            frac_str = f"{label_frac * 100:g}"
 
             labelled_idx, _ = train_test_split(
                 np.arange(len(y_train)), train_size=label_frac,
@@ -496,7 +496,7 @@ def run_label_scarcity(rows):
             y_labelled = y_train[labelled_idx]
 
             for strategy in STRATEGIES:
-                condition = f"{strategy}_label_{frac_pct}"
+                condition = f"{strategy}_label_{frac_str}"
 
                 if (name, condition) in existing_conditions:
                     print(f"\nSkipping {name} / {condition} (already in CSV)")
