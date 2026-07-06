@@ -25,7 +25,20 @@ MCAR_RATES = [0.10, 0.20, 0.30]
 
 
 def run_clean_baseline(rows):
+    existing_conditions = set()
+    if os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_conditions.add((row["dataset"], row["condition"]))
+
     for name in DATASETS:
+        condition = "clean_baseline"
+
+        if (name, condition) in existing_conditions:
+            print(f"\nSkipping {name} / {condition} (already in CSV)")
+            continue
+
         print(f"\n{'='*60}")
         print(f"Dataset: {name}  |  Condition: clean_baseline")
         print("=" * 60)
@@ -45,10 +58,21 @@ def run_clean_baseline(rows):
 
 
 def run_complete_case(rows):
+    existing_conditions = set()
+    if os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_conditions.add((row["dataset"], row["condition"]))
+
     for name in DATASETS:
         for rate in MCAR_RATES:
             rate_pct = int(rate * 100)
             condition = f"complete_case_MCAR_{rate_pct}"
+
+            if (name, condition) in existing_conditions:
+                print(f"\nSkipping {name} / {condition} (already in CSV)")
+                continue
 
             print(f"\n{'='*60}")
             print(f"Dataset: {name}  |  Condition: {condition}")
@@ -82,10 +106,21 @@ def run_complete_case(rows):
 
 
 def run_median_imputation(rows):
+    existing_conditions = set()
+    if os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_conditions.add((row["dataset"], row["condition"]))
+
     for name in DATASETS:
         for rate in MCAR_RATES:
             rate_pct = int(rate * 100)
             condition = f"median_MCAR_{rate_pct}"
+
+            if (name, condition) in existing_conditions:
+                print(f"\nSkipping {name} / {condition} (already in CSV)")
+                continue
 
             print(f"\n{'='*60}")
             print(f"Dataset: {name}  |  Condition: {condition}")
@@ -111,10 +146,21 @@ def run_median_imputation(rows):
 
 
 def run_knn_imputation(rows):
+    existing_conditions = set()
+    if os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_conditions.add((row["dataset"], row["condition"]))
+
     for name in DATASETS:
         for rate in MCAR_RATES:
             rate_pct = int(rate * 100)
             condition = f"knn_MCAR_{rate_pct}"
+
+            if (name, condition) in existing_conditions:
+                print(f"\nSkipping {name} / {condition} (already in CSV)")
+                continue
 
             print(f"\n{'='*60}")
             print(f"Dataset: {name}  |  Condition: {condition}")
@@ -277,6 +323,18 @@ def run_feature_dependent(rows):
 
 def run_adult_clean_baseline(rows):
     name = "adult"
+    condition = "clean_baseline"
+
+    existing_conditions = set()
+    if os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_conditions.add((row["dataset"], row["condition"]))
+
+    if (name, condition) in existing_conditions:
+        print(f"\nSkipping {name} / {condition} (already in CSV)")
+        return
 
     print(f"\n{'='*60}")
     print(f"Dataset: {name}  |  Condition: clean_baseline")
