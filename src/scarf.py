@@ -11,9 +11,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 class SCARFEncoder(nn.Module):
     """
-    Encoder network producing a 64-dimensional embedding from tabular input.
-    Architecture follows Bahri et al. (2021): three hidden layers with
-    ReLU activation and dropout for regularisation.
+    Compact SCARF-style encoder producing a 64-dimensional tabular embedding.
+
+    This project uses a multilayer network with ReLU activations and dropout;
+    it is not intended to reproduce the exact architecture of Bahri et al. (2021).
     """
     def __init__(self, input_dim: int):
         super().__init__()
@@ -57,10 +58,12 @@ class SCARFModel(nn.Module):
 def corrupt_features(X: np.ndarray, corruption_rate: float = 0.6) -> np.ndarray:
     """
     Replace a random subset of feature values with draws from each feature's
-    empirical marginal distribution across the training set.
+    empirical marginal distribution in ``X``.
 
-    Replacement values are sampled from observed (non-NaN) values in each column,
-    making corrupted values plausible in isolation but incorrect for that specific row.
+    Replacement values are sampled from observed (non-NaN) values in each column.
+    In ``pretrain_scarf``, ``X`` is the current mini-batch, which approximates
+    sampling from the full training-set marginal distribution.
+    This makes corrupted values plausible in isolation but incorrect for that specific row.
     This is the corruption mechanism described in Bahri et al. (2021, Algorithm 1).
     NaN values are excluded from the sampling pool so that only observed values
     are used as replacements; the corruption step cannot re-introduce missingness.
@@ -118,12 +121,8 @@ def pretrain_scarf(
     batch_size: int = 256,
     lr: float = 0.001,
 ) -> SCARFEncoder:
-    # NaNs are filled with column medians before pretraining because corrupt_features
-    # samples replacements from observed values; without a fill, NaN-heavy columns
-    # would have too few observed values to sample from.  This fill is a preprocessing
-    # step to enable the corruption mechanism, not an imputation strategy:
-    # SCARF is still pretrained on the already-incomplete data, reflecting the realistic
-    # scenario where clean data is unavailable.
+    # Median filling supplies valid numeric inputs to the encoder and corruption
+    # mechanism, while the pretraining objective remains contrastive.
     X_filled = X_train.copy()
     for j in range(X_filled.shape[1]):
         col = X_filled[:, j]
@@ -196,7 +195,7 @@ def finetune_scarf(
     X_train = X_filled
 
     # The encoder is frozen to isolate the contribution of the pretraining stage:
-    # only the linear classification head is trained on labels, so downstream performance
+    # only the classification head is trained on labels, so downstream performance
     # reflects the quality of the pretrained representations rather than joint optimisation.
     # This deviates from Bahri et al. who fine-tune both encoder and head jointly;
     # freezing is a deliberate design choice to enable a cleaner ablation.

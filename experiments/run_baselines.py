@@ -584,6 +584,10 @@ def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     rows = []
 
+    run_clean_baseline(rows)
+    run_complete_case(rows)
+    run_median_imputation(rows)
+    run_knn_imputation(rows)
     run_scarf(rows)
     run_feature_dependent(rows)
     run_label_scarcity(rows)
@@ -609,8 +613,11 @@ def main():
         acc_str = f"{r['accuracy']:.4f}" if r["accuracy"] is not None else "None"
         print(f"  {r['dataset']:6s}  {r['condition']:30s}  AUC={auc_str}  Acc={acc_str}")
 
+    write_header = not os.path.exists(OUTPUT_CSV) or os.path.getsize(OUTPUT_CSV) == 0
     with open(OUTPUT_CSV, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["dataset", "condition", "AUC", "accuracy"])
+        if write_header:
+            writer.writeheader()
         for r in rows:
             writer.writerow(
                 {

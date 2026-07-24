@@ -218,7 +218,7 @@ def inject_missingness(X, mechanism, rate, feature_groups=None):
     if mechanism == "MCAR":
         # Cell-level MCAR: each value is independently set to NaN with probability `rate`.
         # Note that the row-level survival probability is (1 - rate)^n_cols; at 30% MCAR
-        # across 23 features, only (0.7)^23 ~= 0.1% of rows survive intact, so complete-
+        # across 23 features, only (0.7)^23 ~= 0.03% of rows survive intact, so complete-
         # case analysis becomes severely restricted even at moderate missingness rates.
         mask = np.random.rand(n_rows, n_cols) < rate
         X_miss[mask] = np.nan
@@ -230,10 +230,9 @@ def inject_missingness(X, mechanism, rate, feature_groups=None):
         n_affected = max(1, int(np.round(rate * n_rows)))
         affected_rows = np.random.choice(n_rows, size=n_affected, replace=False)
         n_missing_before = int(np.isnan(X_miss).sum())
-        # Each affected row independently draws a random correlated group, simulating
-        # independent pipeline failures affecting different database tables for different
-        # customers.  This approximates MAR: the probability of missingness depends on
-        # which system a customer's data is routed through, not on the missing values themselves.
+        # Affected rows and correlated groups are selected independently of observed and
+        # unobserved values. This is structured block missingness under MCAR-type selection,
+        # not formal MAR.
         for row_idx in affected_rows:
             group = feature_groups[np.random.randint(len(feature_groups))]
             for col_idx in group:

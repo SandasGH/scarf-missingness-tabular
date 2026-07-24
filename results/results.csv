@@ -96,8 +96,8 @@ uci,scarf_label_1,0.634,0.789
 uci,median_label_1,0.646,0.787
 uci,knn_label_1,0.652,0.794
 telco,scarf_label_0.5,0.802,0.768
-telco,median_label_0.5,0.457,0.559
-telco,knn_label_0.5,0.444,0.316
+telco,median_label_0.5,,
+telco,knn_label_0.5,,
 telco,scarf_label_1,0.811,0.763
 telco,median_label_1,0.810,0.793
 telco,knn_label_1,0.810,0.778
