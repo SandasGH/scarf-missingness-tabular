@@ -92,7 +92,10 @@ def train_mlp(
 
     # Restore weights from the best validation epoch rather than the final epoch,
     # so the returned model reflects the point of lowest generalisation loss.
-    model.load_state_dict(best_weights)
+    # Without a validation split there is no signal to select a best epoch, so
+    # the final trained weights are kept instead of the initial random weights.
+    if use_val_split:
+        model.load_state_dict(best_weights)
     return model
 
 

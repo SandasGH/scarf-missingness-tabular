@@ -153,6 +153,9 @@ def pretrain_scarf(
             # in Bahri et al.: corrupting both views was found to reduce performance in
             # the paper's ablation study, so only view2 is corrupted here.
             view1 = X_batch.copy()
+            # Replacement values here are sampled from X_batch (the current mini-batch),
+            # not the full training set, so this is a computational approximation to
+            # sampling from the full training-set marginal distribution described above.
             view2 = corrupt_features(X_batch, corruption_rate)
 
             t1 = torch.tensor(view1, dtype=torch.float32)
